@@ -24,6 +24,7 @@ function Point(x, y) {
     ctx.clearRect(unit * x, unit * y, unit, unit);
   };
   this.shiftDown = () => new Point(x, y + 1);
+  this.moving = true;
 }
 
 function Block(type, pivot) {
@@ -70,7 +71,7 @@ function Block(type, pivot) {
     return getNextShape[type]();
   };
 
-  this.moving = true;
+  this.moving = points.reduce((acc, el) => acc && el.moving, true);
 }
 
 function Board() {
@@ -197,7 +198,7 @@ function Board() {
         (acc, p) =>
           acc ||
           p.getY() === height - 1 ||
-          occupiedPosition.reduce((acc, occupiedPoint) => {
+          backgroundBoard.reduce((acc, occupiedPoint) => {
             // let a = p.getX();
             // let b = p.getY();
             return (
@@ -211,7 +212,7 @@ function Board() {
 
     if (isPlacable(currentBlock.getPoints())) {
       // console.log("hi");
-      currentBlock.moving = false;
+      currentBlock.getPoints().forEach((p) => (p.moving = false));
       currentBlock.getPoints().forEach((p) => {
         p.show();
         occupiedPosition.push(p);
@@ -229,7 +230,7 @@ function Board() {
         p.getX() >= 0 &&
         p.getX() < width &&
         p.getY() <= height &&
-        occupiedPosition.reduce(
+        backgroundBoard.reduce(
           (acc, occupiedPoint) =>
             acc &&
             (occupiedPoint.getX() !== p.getX() ||
@@ -239,11 +240,17 @@ function Board() {
       true
     );
 
-  const isGameOver = () =>
-    occupiedPosition.reduce(
-      (acc, occupiedPoint) => acc || occupiedPoint.getY() === 0,
+  const isGameOver = () => {
+    console.log(backgroundBoard);
+    return backgroundBoard.reduce(
+      (acc, occupiedPoint) =>
+        acc ||
+        (occupiedPoint !== " " &&
+          !occupiedPoint.moving &&
+          occupiedPoint.getY() === 0),
       false
     );
+  };
 
   this.play = async () => {
     const canvas = document.getElementById("board");
