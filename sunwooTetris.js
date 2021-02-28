@@ -4,15 +4,13 @@ function play() {
   const board = new Board();
   board.play();
 }
-// listen for the "keypress" event
-// process.stdin.on("keypress", function (ch, key) {
-//   console.log('got "keypress"', key);
-//   if (key && key.ctrl && key.name == "c") {
-//     process.stdin.pause();
-//   }
-// });
 
-function Point(x, y) {
+function Point(x, y, move = true) {
+  let moving = move;
+  this.isMoving = () => moving;
+  this.placePoint = () => {
+    moving = false;
+  };
   this.getX = () => x;
   this.getY = () => y;
   this.show = () => {
@@ -23,13 +21,10 @@ function Point(x, y) {
     const ctx = document.getElementById("board").getContext("2d");
     ctx.clearRect(unit * x, unit * y, unit, unit);
   };
-  this.shiftDown = () => new Point(x, y + 1);
-  this.moving = true;
+  this.shiftDown = () => new Point(x, y + 1, false);
 }
 
-function Block(type, pivot) {
-  const x = pivot[0];
-  const y = pivot[1];
+function Block(type, pivotX, pivotY) {
   let points = new Array(4);
   for (let i = 0; i < 4; i++) {
     points[i] = i;
@@ -39,272 +34,481 @@ function Block(type, pivot) {
     I1: () =>
       points.map((p) => {
         const mappingTo = {
-          0: () => new Point(x - 1, y),
-          1: () => new Point(x, y),
-          2: () => new Point(x + 1, y),
-          3: () => new Point(x + 2, y),
+          0: () => new Point(pivotX - 1, pivotY),
+          1: () => new Point(pivotX, pivotY),
+          2: () => new Point(pivotX + 1, pivotY),
+          3: () => new Point(pivotX + 2, pivotY),
         };
         return mappingTo[p]();
       }),
     I2: () =>
       points.map((p) => {
         const mappingTo = {
-          0: () => new Point(x, y - 1),
-          1: () => new Point(x, y),
-          2: () => new Point(x, y + 1),
-          3: () => new Point(x, y + 2),
+          0: () => new Point(pivotX, pivotY - 1),
+          1: () => new Point(pivotX, pivotY),
+          2: () => new Point(pivotX, pivotY + 1),
+          3: () => new Point(pivotX, pivotY + 2),
         };
+        return mappingTo[p]();
+      }),
+    O: () =>
+      points.map((p) => {
+        const mappingTo = {
+          0: () => new Point(pivotX - 1, pivotY),
+          1: () => new Point(pivotX, pivotY),
+          2: () => new Point(pivotX, pivotY + 1),
+          3: () => new Point(pivotX - 1, pivotY + 1),
+        };
+        return mappingTo[p]();
+      }),
+
+    J1: () =>
+      points.map((p) => {
+        const mappingTo = {
+          0: () => new Point(pivotX - 1, pivotY - 1),
+          1: () => new Point(pivotX - 1, pivotY),
+          2: () => new Point(pivotX, pivotY),
+          3: () => new Point(pivotX + 1, pivotY),
+        };
+
+        return mappingTo[p]();
+      }),
+
+    J2: () =>
+      points.map((p) => {
+        const mappingTo = {
+          0: () => new Point(pivotX + 1, pivotY - 1),
+          1: () => new Point(pivotX, pivotY - 1),
+          2: () => new Point(pivotX, pivotY),
+          3: () => new Point(pivotX, pivotY + 1),
+        };
+
+        return mappingTo[p]();
+      }),
+    J3: () =>
+      points.map((p) => {
+        const mappingTo = {
+          0: () => new Point(pivotX + 1, pivotY),
+          1: () => new Point(pivotX, pivotY),
+          2: () => new Point(pivotX + 1, pivotY),
+          3: () => new Point(pivotX + 1, pivotY - 1),
+        };
+
+        return mappingTo[p]();
+      }),
+    J4: () =>
+      points.map((p) => {
+        const mappingTo = {
+          0: () => new Point(pivotX - 1, pivotY - 1),
+          1: () => new Point(pivotX, pivotY - 1),
+          2: () => new Point(pivotX, pivotY),
+          3: () => new Point(pivotX, pivotY + 1),
+        };
+
+        return mappingTo[p]();
+      }),
+    L1: () =>
+      points.map((p) => {
+        const mappingTo = {
+          0: () => new Point(pivotX - 1, pivotY),
+          1: () => new Point(pivotX, pivotY),
+          2: () => new Point(pivotX + 1, pivotY),
+          3: () => new Point(pivotX + 1, pivotY - 1),
+        };
+
+        return mappingTo[p]();
+      }),
+    L2: () =>
+      points.map((p) => {
+        const mappingTo = {
+          0: () => new Point(pivotX, pivotY - 1),
+          1: () => new Point(pivotX, pivotY),
+          2: () => new Point(pivotX, pivotY + 1),
+          3: () => new Point(pivotX + 1, pivotY + 1),
+        };
+
+        return mappingTo[p]();
+      }),
+    L3: () =>
+      points.map((p) => {
+        const mappingTo = {
+          0: () => new Point(pivotX - 1, pivotY + 1),
+          1: () => new Point(pivotX - 1, pivotY),
+          2: () => new Point(pivotX, pivotY),
+          3: () => new Point(pivotX + 1, pivotY),
+        };
+
+        return mappingTo[p]();
+      }),
+    L4: () =>
+      points.map((p) => {
+        const mappingTo = {
+          0: () => new Point(pivotX - 1, pivotY - 1),
+          1: () => new Point(pivotX, pivotY - 1),
+          2: () => new Point(pivotX, pivotY),
+          3: () => new Point(pivotX, pivotY + 1),
+        };
+
+        return mappingTo[p]();
+      }),
+    S1: () =>
+      points.map((p) => {
+        const mappingTo = {
+          0: () => new Point(pivotX - 1, pivotY),
+          1: () => new Point(pivotX, pivotY),
+          2: () => new Point(pivotX, pivotY - 1),
+          3: () => new Point(pivotX + 1, pivotY - 1),
+        };
+
+        return mappingTo[p]();
+      }),
+    S2: () =>
+      points.map((p) => {
+        const mappingTo = {
+          0: () => new Point(pivotX, pivotY - 1),
+          1: () => new Point(pivotX, pivotY),
+          2: () => new Point(pivotX + 1, pivotY),
+          3: () => new Point(pivotX + 1, pivotY + 1),
+        };
+
+        return mappingTo[p]();
+      }),
+    S3: () =>
+      points.map((p) => {
+        const mappingTo = {
+          0: () => new Point(pivotX - 1, pivotY + 1),
+          1: () => new Point(pivotX, pivotY + 1),
+          2: () => new Point(pivotX, pivotY),
+          3: () => new Point(pivotX + 1, pivotY),
+        };
+
+        return mappingTo[p]();
+      }),
+    S4: () =>
+      points.map((p) => {
+        const mappingTo = {
+          0: () => new Point(pivotX - 1, pivotY - 1),
+          1: () => new Point(pivotX - 1, pivotY),
+          2: () => new Point(pivotX, pivotY),
+          3: () => new Point(pivotX, pivotY + 1),
+        };
+
+        return mappingTo[p]();
+      }),
+    T1: () =>
+      points.map((p) => {
+        const mappingTo = {
+          0: () => new Point(pivotX - 1, pivotY),
+          1: () => new Point(pivotX, pivotY),
+          2: () => new Point(pivotX, pivotY - 1),
+          3: () => new Point(pivotX + 1, pivotY),
+        };
+
+        return mappingTo[p]();
+      }),
+    T2: () =>
+      points.map((p) => {
+        const mappingTo = {
+          0: () => new Point(pivotX, pivotY - 1),
+          1: () => new Point(pivotX, pivotY),
+          2: () => new Point(pivotX + 1, pivotY),
+          3: () => new Point(pivotX, pivotY + 1),
+        };
+
+        return mappingTo[p]();
+      }),
+    T3: () =>
+      points.map((p) => {
+        const mappingTo = {
+          0: () => new Point(pivotX - 1, pivotY),
+          1: () => new Point(pivotX, pivotY),
+          2: () => new Point(pivotX, pivotY + 1),
+          3: () => new Point(pivotX + 1, pivotY),
+        };
+
+        return mappingTo[p]();
+      }),
+    T4: () =>
+      points.map((p) => {
+        const mappingTo = {
+          0: () => new Point(pivotX, pivotY - 1),
+          1: () => new Point(pivotX, pivotY),
+          2: () => new Point(pivotX - 1, pivotY),
+          3: () => new Point(pivotX, pivotY + 1),
+        };
+
+        return mappingTo[p]();
+      }),
+    Z1: () =>
+      points.map((p) => {
+        const mappingTo = {
+          0: () => new Point(pivotX - 1, pivotY - 1),
+          1: () => new Point(pivotX, pivotY - 1),
+          2: () => new Point(pivotX, pivotY),
+          3: () => new Point(pivotX + 1, pivotY),
+        };
+
+        return mappingTo[p]();
+      }),
+    Z2: () =>
+      points.map((p) => {
+        const mappingTo = {
+          0: () => new Point(pivotX, pivotY + 1),
+          1: () => new Point(pivotX, pivotY),
+          2: () => new Point(pivotX + 1, pivotY),
+          3: () => new Point(pivotX + 1, pivotY - 1),
+        };
+
+        return mappingTo[p]();
+      }),
+    Z3: () =>
+      points.map((p) => {
+        const mappingTo = {
+          0: () => new Point(pivotX - 1, pivotY),
+          1: () => new Point(pivotX, pivotY),
+          2: () => new Point(pivotX, pivotY + 1),
+          3: () => new Point(pivotX + 1, pivotY + 1),
+        };
+
+        return mappingTo[p]();
+      }),
+    Z4: () =>
+      points.map((p) => {
+        const mappingTo = {
+          0: () => new Point(pivotX - 1, pivotY + 1),
+          1: () => new Point(pivotX - 1, pivotY),
+          2: () => new Point(pivotX, pivotY),
+          3: () => new Point(pivotX, pivotY - 1),
+        };
+
         return mappingTo[p]();
       }),
   };
 
   points = blockGenerator[type]();
   this.getPoints = () => points;
-  this.shiftLeft = () => new Block(type, [x - 1, y]);
-  this.shiftRight = () => new Block(type, [x + 1, y]);
-  this.shiftDown = () => new Block(type, [x, y + 1]);
+  // this.mapPoints = (f) => points.map((p) => f(p));
+  this.shiftLeft = () => new Block(type, pivotX - 1, pivotY);
+  this.shiftRight = () => new Block(type, pivotX + 1, pivotY);
+  this.shiftDown = () => new Block(type, pivotX, pivotY + 1);
   this.rotate = () => {
     const getNextShape = {
-      I1: () => new Block("I2", pivot),
-      I2: () => new Block("I1", pivot),
+      I1: () => new Block("I2", pivotX, pivotY),
+      I2: () => new Block("I1", pivotX, pivotY),
+      O: () => new Block("O", pivotX, pivotY),
+      J1: () => new Block("J2", pivotX, pivotY),
+      J2: () => new Block("J3", pivotX, pivotY),
+      J3: () => new Block("J4", pivotX, pivotY),
+      J4: () => new Block("J1", pivotX, pivotY),
+      L1: () => new Block("L2", pivotX, pivotY),
+      L2: () => new Block("L3", pivotX, pivotY),
+      L3: () => new Block("L4", pivotX, pivotY),
+      L4: () => new Block("L1", pivotX, pivotY),
+      S1: () => new Block("S2", pivotX, pivotY),
+      S2: () => new Block("S3", pivotX, pivotY),
+      S3: () => new Block("S4", pivotX, pivotY),
+      S4: () => new Block("S1", pivotX, pivotY),
+      T1: () => new Block("T2", pivotX, pivotY),
+      T2: () => new Block("T3", pivotX, pivotY),
+      T3: () => new Block("T4", pivotX, pivotY),
+      T4: () => new Block("T1", pivotX, pivotY),
+      Z1: () => new Block("Z2", pivotX, pivotY),
+      Z2: () => new Block("Z3", pivotX, pivotY),
+      Z3: () => new Block("Z4", pivotX, pivotY),
+      Z4: () => new Block("Z1", pivotX, pivotY),
     };
     return getNextShape[type]();
   };
-
-  this.moving = points.reduce((acc, el) => acc && el.moving, true);
+  this.place = () => points.forEach((p) => p.placePoint());
+  this.isMoving = () => points[0].isMoving();
+  this.show = () => points.forEach((p) => p.show());
+  this.hide = () => points.forEach((p) => p.hide());
 }
-
 function Board() {
-  const width = 10;
   const height = 20;
-  const startPos = [5, 1];
-  const generateBoard = () => {
-    const row = new Array(width);
-    for (let i = 0; i < row.length; i++) {
-      row[i] = " ";
+  const width = 10;
+  let currentBlock = undefined;
+  let board = [];
+  this.getBoard = () => board;
+  const initializeBoard = () => {
+    let row = new Array(width);
+    for (let i = 0; i < width; i++) {
+      row[i] = undefined;
     }
-
-    const board = new Array(height);
-    for (let i = 0; i < board.length; i++) {
-      board[i] = row.map((x) => x);
+    for (let i = 0; i < height; i++) {
+      board.push(row.slice(0));
     }
-
-    // console.log("board: ", board);
-
-    return board;
   };
-  let occupiedPosition = [];
-  let backgroundBoard = generateBoard();
-  let currentBlock;
+  initializeBoard();
 
-  //Todo: pick the current block randomly.
+  const addToBoard = (point, a = true) => {
+    board[point.getY()][point.getX()] = point;
+  };
+  const removeFromBoard = (point) => {
+    board[point.getY()][point.getX()] = undefined;
+  };
 
-  const moveBlock = (block, nextBlock) => {
-    let points;
-    if (block && block.moving) {
-      points = block.getPoints();
-      points.forEach((p) => {
-        p.hide();
-      });
-      points.forEach((p) => (backgroundBoard[p.getY()][p.getX()] = " "));
-    }
-    points = nextBlock.getPoints();
-    // console.log(nextBlock.getPoints());
+  const createBlock = () => {
+    const initialBlockList = ["I1", "L1", "J1", "O", "Z1", "S1", "T1"];
+    currentBlock = new Block(
+      initialBlockList[Math.floor(Math.random() * 7)],
+      4,
+      1
+    );
+    currentBlock.show();
+    currentBlock.getPoints().forEach((p) => addToBoard(p, false));
+  };
 
-    points.forEach((p) => {
-      backgroundBoard[p.getY()][p.getX()] = p;
-      p.show();
-    });
-    console.log(nextBlock);
-    currentBlock = nextBlock;
+  const shiftBlockWithKeyboard = {
+    ArrowLeft: () => currentBlock.shiftLeft(),
+    ArrowRight: () => currentBlock.shiftRight(),
+    ArrowDown: () => currentBlock.shiftDown(),
+    ArrowUp: () => currentBlock.rotate(),
+  };
 
-    // console.log(backgroundBoard);
+  const isValidBlock = (block) => {
+    const isValidPoint = (point) => {
+      const isOccupied = () => {
+        for (let i = 0; i < height; i++) {
+          for (let j = 0; j < width; j++) {
+            if (board[i][j] === undefined) continue;
+            if (board[i][j].isMoving()) continue;
+            if (
+              board[i][j].getX() === point.getX() &&
+              board[i][j].getY() === point.getY()
+            )
+              return true;
+          }
+        }
+
+        return false;
+      };
+
+      // if (board[19][4] !== undefined) {
+      //   console.log(board[19][4].isMoving());
+      //   console.log(board[19][4].getX(), block.getPoints()[0].getX());
+      //   console.log(board[19][4].getY(), block.getPoints()[0].getY());
+      // }
+
+      // console.log(isOccupied());
+      return (
+        point.getX() >= 0 &&
+        point.getX() < width &&
+        point.getY() >= 0 &&
+        point.getY() < height &&
+        !isOccupied()
+      );
+    };
+
+    return block
+      .getPoints()
+      .reduce((acc, point) => acc && isValidPoint(point), true);
   };
 
   const removeRow = () => {
-    let rowsThatWillBeRemoved = [];
-    let rowIdxTrack = 0;
-    backgroundBoard.forEach((row) => {
-      if (!row.reduce((acc, el) => acc || el === " ", false)) {
-        rowsThatWillBeRemoved.push(rowIdxTrack);
+    board = board.map((row) => {
+      if (
+        row.reduce((acc, p) => acc && p !== undefined && !p.isMoving(), true)
+      ) {
+        return row.map((p) => {
+          p.hide();
+          return undefined;
+        });
+      } else {
+        return row;
       }
-      rowIdxTrack++;
     });
+  };
 
-    //update occupiedPostion array
-    if (rowsThatWillBeRemoved.length !== 0) {
-      const pointsOnTheBoardThatWillBeRemoved = [];
-      rowsThatWillBeRemoved.forEach((row) =>
-        pointsOnTheBoardThatWillBeRemoved.push(backgroundBoard[row])
-      );
-      occupiedPosition = occupiedPosition.filter((occPoint) => {
-        if (
-          pointsOnTheBoardThatWillBeRemoved.reduce(
-            (acc, row) =>
-              acc ||
-              row.reduce(
-                (acc2, curPoint) => acc2 || occPoint === curPoint,
-                false
-              ),
-            false
-          )
-        ) {
-          return false;
-        } else {
-          return true;
-        }
-      });
-    }
-
-    if (rowsThatWillBeRemoved.length !== 0) {
-      backgroundBoard.forEach((row) =>
-        row.forEach((pt) => {
-          if (pt !== " ") {
-            pt.hide();
-          }
-        })
-      );
-    }
-    //update board and gui
-    while (rowsThatWillBeRemoved.length !== 0) {
-      console.log(backgroundBoard);
-      let rowWillbeRemoved = rowsThatWillBeRemoved.shift();
-      backgroundBoard[rowWillbeRemoved].forEach((p) => p.hide());
-      for (let i = rowWillbeRemoved; i > 0; i--) {
-        backgroundBoard[i - 1] = backgroundBoard[i - 1].map((pt) =>
-          pt === " " ? " " : pt.shiftDown()
-        );
-        backgroundBoard[i] = backgroundBoard[i - 1];
-      }
-      backgroundBoard[0] = backgroundBoard[0].map((_) => " ");
-
-      if (rowsThatWillBeRemoved.length === 0) {
-        backgroundBoard.forEach((row) =>
-          row.forEach((pt) => {
-            if (pt !== " ") {
-              pt.show();
+  const repositionBoard = () => {
+    for (let i = 0; i < height; i++) {
+      if (board[i].reduce((acc, el) => acc && el === undefined, true)) {
+        for (let j = i; j > 0; j--) {
+          board[j - 1] = board[j - 1].map((point) => {
+            if (point !== undefined) {
+              point.hide();
+              point = point.shiftDown();
+              point.show();
+              return point;
+            } else {
+              return undefined;
             }
-          })
-        );
+          });
+          board[j] = board[j - 1].map((p) => {
+            if (p === undefined) return undefined;
+            return new Point(p.getX(), p.getY(), false);
+          });
+        }
       }
-      // if (rowsThatWillBeRemoved.length === 0) {
-      // }
     }
-  };
-
-  const placeBlock = () => {
-    const isPlacable = (points) =>
-      points.reduce(
-        (acc, p) =>
-          acc ||
-          p.getY() === height - 1 ||
-          backgroundBoard.reduce((acc, occupiedPoint) => {
-            // let a = p.getX();
-            // let b = p.getY();
-            return (
-              acc ||
-              (p.getX() === occupiedPoint.getX() &&
-                p.getY() + 1 === occupiedPoint.getY())
-            );
-          }, false),
-        false
-      );
-
-    if (isPlacable(currentBlock.getPoints())) {
-      // console.log("hi");
-      currentBlock.getPoints().forEach((p) => (p.moving = false));
-      currentBlock.getPoints().forEach((p) => {
-        p.show();
-        occupiedPosition.push(p);
-      });
-      currentBlock = undefined;
-      removeRow();
-      // moveBlock(undefined, new Block("I1", startPos));
-    }
-  };
-
-  const isMovable = (nextPoints) =>
-    nextPoints.reduce(
-      (acc, p) =>
-        acc &&
-        p.getX() >= 0 &&
-        p.getX() < width &&
-        p.getY() <= height &&
-        backgroundBoard.reduce(
-          (acc, occupiedPoint) =>
-            acc &&
-            (occupiedPoint.getX() !== p.getX() ||
-              occupiedPoint.getY() !== p.getY()),
-          true
-        ),
-      true
-    );
-
-  const isGameOver = () => {
-    console.log(backgroundBoard);
-    return backgroundBoard.reduce(
-      (acc, occupiedPoint) =>
-        acc ||
-        (occupiedPoint !== " " &&
-          !occupiedPoint.moving &&
-          occupiedPoint.getY() === 0),
-      false
-    );
   };
 
   this.play = async () => {
     const canvas = document.getElementById("board");
-    canvas.width = unit * 10;
-    canvas.height = unit * 20;
-    canvas.tabIndex = "1";
-
-    const shiftBlockWithKeyboard = {
-      ArrowLeft: () => {
-        if (!isMovable(currentBlock.shiftLeft().getPoints())) return;
-        moveBlock(currentBlock, currentBlock.shiftLeft());
-        placeBlock();
-      },
-      ArrowRight: () => {
-        if (!isMovable(currentBlock.shiftRight().getPoints())) return;
-        moveBlock(currentBlock, currentBlock.shiftRight());
-        placeBlock();
-      },
-      ArrowDown: () => {
-        if (!isMovable(currentBlock.shiftDown().getPoints())) return;
-        moveBlock(currentBlock, currentBlock.shiftDown());
-        placeBlock();
-      },
-      ArrowUp: () => {
-        if (!isMovable(currentBlock.rotate().getPoints())) return;
-        moveBlock(currentBlock, currentBlock.rotate());
-        placeBlock();
-      },
-    };
-
+    canvas.width = width * unit;
+    canvas.height = height * unit;
     document.addEventListener("keydown", function (event) {
-      shiftBlockWithKeyboard[event.key]();
+      if (isValidBlock(shiftBlockWithKeyboard[event.key]())) {
+        currentBlock.getPoints().forEach((p) => removeFromBoard(p));
+        currentBlock.hide();
+        currentBlock = shiftBlockWithKeyboard[event.key]();
+        currentBlock.getPoints().forEach((p) => addToBoard(p));
+        currentBlock.show();
+      }
     });
-
     let count = 0;
-    let blockMoveDownCount = 10;
     while (true) {
-      await sleep(1000 / blockMoveDownCount);
-      count++;
-      if (isGameOver()) break;
       if (currentBlock === undefined) {
-        moveBlock(undefined, new Block("I1", startPos));
-        continue;
+        createBlock();
       }
-      if (count === blockMoveDownCount) {
+
+      await sleep(200);
+      count++;
+      if (count === 5) {
+        console.log(board);
+
         count = 0;
-        shiftBlockWithKeyboard["ArrowDown"]();
-        placeBlock();
-        continue;
+        // console.log(isValidBlock(currentBlock.shiftDown()));
+        if (isValidBlock(currentBlock.shiftDown())) {
+          currentBlock.getPoints().forEach((p) => removeFromBoard(p));
+          currentBlock.hide();
+          currentBlock = currentBlock.shiftDown();
+          currentBlock.getPoints().forEach((p) => addToBoard(p));
+          currentBlock.show();
+        } else {
+          currentBlock.place();
+          if (
+            currentBlock
+              .getPoints()
+              .reduce((acc, p) => acc || p.getY() === 0, false)
+          ) {
+            break;
+          }
+          currentBlock = undefined;
+          removeRow();
+          repositionBoard();
+        }
       }
-      // shiftBlockWithKeyboard[key.name]();
     }
   };
 }
 
-//current Bug: invisible block, maybe because of the occupied blokc
-//lets try to remove it btw, it seems redundant now that we got all info from board
+let a;
+function play() {
+  const board = new Board();
+  a = board.getBoard();
+  board.play();
+}
+
+/*
+1. initialize board
+-------------------------
+2. create a block
+3. move blocks
+4. place blocks
+5. check gameover
+6. remove points
+6-1. reposition points
+
+
+*/
