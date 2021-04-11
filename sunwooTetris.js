@@ -494,6 +494,7 @@ function Board() {
 }
 
 let a;
+
 function play() {
   const board = new Board();
   a = board.getBoard();
