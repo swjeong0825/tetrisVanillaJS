@@ -1,9 +1,5 @@
 const unit = 35;
 const sleep = (delay) => new Promise((resolve) => setTimeout(resolve, delay));
-function play() {
-  const board = new Board();
-  board.play();
-}
 
 function Point(x, y, move = true) {
   let moving = move;
@@ -494,7 +490,6 @@ function Board() {
 }
 
 let a;
-
 function play() {
   const board = new Board();
   a = board.getBoard();
